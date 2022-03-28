@@ -1,6 +1,7 @@
 import pygame as pg
 import socket
 import json
+from _thread import *
 data = {'player1' : {}}
 me = None
 windows = pg.display.set_mode((1000, 700), pg.DOUBLEBUF)
@@ -16,6 +17,7 @@ class Player():
         self.pulspeed = args[4]
         self.display=args[5]
         self.rect.x = args[6]
+        self.me = args[7]
     def update(self):
         if pg.key.get_pressed()[pg.K_UP] and self.rect.top > 0 :
             self.rect.y -= self.speed
@@ -24,16 +26,29 @@ class Player():
         if pg.key.get_pressed()[pg.K_SPACE] and self.fir == False:
             self.fire()
         elif self.fir == True:
-            if self.pulrect.x > 1000:
-                self.pulrect = None
-                self.pul = None
-                self.fir = False
+            if self.me == 'player1':
+                if self.pulrect.x > 1000:
+                    self.pulrect = None
+                    self.pul = None
+                    self.fir = False
+                else:
+                    self.pulrect.x += self.pulspeed
+                    self.display.blit(self.pul, self.pulrect)
             else:
-                self.pulrect.x += self.pulspeed
-                self.display.blit(self.pul, self.pulrect)
+                if self.pulrect.x < 0:
+                    self.pulrect = None
+                    self.pul = None
+                    self.fir = False
+                else:
+                    self.pulrect.x -= self.pulspeed
+                    self.display.blit(self.pul, self.pulrect)
         self.display.blit(self.image, self.rect)
     def manup(self):
         self.display.blit(self.image, self.rect)
+        try:
+            self.display.blit(self.pul, self.pulrect)
+        except:
+            pass
     def fire(self):
         if self.fir == False:
             self.pul = pg.transform.scale((pg.image.load('pupilka.png')), (20, 20))
@@ -46,21 +61,38 @@ class Player():
 def connec(type):
     global data , me , you , playe2
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.settimeout(300)
+    sock.settimeout(3000)
     #Get headers
     if type == 'GET':
         dat = {'headers' : 'GET' , 'room' : 1 , 'game' : {}}
-        sock.connect(('192.168.1.188', 2222))
+        sock.connect(('35.239.48.224', 2222))
         sock.send(json.dumps(dat).encode('utf-8'))
         try:
             if me == 'player1':
                 data['player2'] = json.loads(sock.recv(1048576).decode('utf-8'))['player2']
                 playe2.rect.x = data['player2']['transform'][0]
                 playe2.rect.y = data['player2']['transform'][1]
+                if 'pul' in data['player2'].keys():
+                    if data['player2']['pul'] != None:
+                        if not hasattr(playe2 , 'pulrect') or playe2.pulrect == None:
+                            playe2.fire()
+                        print(data['player2']['pul'])
+                        playe2.pulrect.x = data['player2']['pul'][0]
+                        playe2.pulrect.y = data['player2']['pul'][1]
+
+
             if me == 'player2':
                 data['player1'] = json.loads(sock.recv(1048576).decode('utf-8'))['player1']
                 playe2.rect.x = data['player1']['transform'][0]
                 playe2.rect.y = data['player1']['transform'][1]
+                if 'pul' in data['player1'].keys():
+                    if data['player1']['pul'] != None:
+                        if not hasattr(playe2 , 'pulrect') or playe2.pulrect == None:
+                            playe2.fire()
+                        print(data['player1']['pul'])
+                        playe2.pulrect.x = data['player1']['pul'][0]
+                        playe2.pulrect.y = data['player1']['pul'][1]
+
         except:
             pass
 
@@ -68,49 +100,55 @@ def connec(type):
     #Post headers
     if type == 'POST':
         dat = {'headers': 'POST' , 'room' : 1 , 'game' : data}
-        sock.connect(('192.168.1.188' , 2222))
+        sock.connect(('35.239.48.224' , 2222))
         sock.send(json.dumps(dat).encode('utf-8'))
 
     #Room connect headers
     if type == 'CONN':
         dat = {'headers' : 'CONN' , 'room' : 1 , 'game' : {}}
-        sock.connect(('192.168.1.188' , 2222))
+        sock.connect(('35.239.48.224' , 2222))
         sock.send(json.dumps(dat).encode('utf-8'))
         da = json.loads(sock.recv(1048576).decode('utf-8'))
         print(da['status'])
         if da['status'] == 'admin':
             me = 'player1'
-            you = Player(['1.png', 150, 150, 5, 5, windows, 0])
-            playe2 = Player(['1.png', 150, 150, 5, 5, windows, 840])
+            you = Player(['1.png', 150, 150, 5, 5, windows, 0 , me])
+            playe2 = Player(['1.png', 150, 150, 5, 5, windows, 840 , me])
         elif da['status'] == 'connected':
             me = 'player2'
-            you = Player(['1.png', 150, 150, 5, 5, windows, 840])
-            playe2 = Player(['1.png', 150, 150, 5, 5, windows, 0])
+            you = Player(['1.png', 150, 150, 5, 5, windows, 840,me])
+            playe2 = Player(['1.png', 150, 150, 5, 5, windows, 0,me])
 
 #Parsing function
 def parse():
-    global data , me , you
-    if me == 'player1':
-        data['player1'] = {'transform' : [you.rect.x , you.rect.y]}
-        if hasattr(you , 'pulrect'):
-            try:
-                data['player1']['pul'] = [you.pulrect.x , you.pulrect.y]
-            except:
-                data['player1']['pul'] = None
+    global data , me , you , playe2
+    try:
+        if me == 'player1':
+            data['player1'] = {'transform' : [you.rect.x , you.rect.y]}
+            if hasattr(you , 'pulrect')or you.pulrect != None:
+                try:
+                    data['player1']['pul'] = [you.pulrect.x , you.pulrect.y]
+                except:
+                    data['player1']['pul'] = None
 
-    if me == 'player2':
-        data['player2'] = {'transform' : [you.rect.x , you.rect.y]}
-        if hasattr(you , 'pulrect'):
-            try:
-                data['player2']['pul'] = [you.pulrect.x , you.pulrect.y]
-            except:
-                data['player2']['pul'] = None
+        if me == 'player2':
+            data['player2'] = {'transform' : [you.rect.x , you.rect.y]}
+            if hasattr(you , 'pulrect') or you.pulrect != None:
+                try:
+                    data['player2']['pul'] = [you.pulrect.x , you.pulrect.y]
+                except:
+                    data['player2']['pul'] = None
+    except:
+        pass
 
 try:
     connec('CONN')
 except Exception as e:
     print(str(e))
-
+def server(c):
+    connec("GET")
+    parse()
+    connec("POST")
 tick = 0
 game = True
 bg = pg.transform.scale(pg.image.load('3.jpg'), (1000, 700))
@@ -123,11 +161,7 @@ while game == True:
         if e.type == pg.QUIT:
             game = False
     pg.display.set_caption(str(clock.get_fps()))
-    if tick == 5:
-        connec("GET")
-        parse()
-        connec("POST")
-        tick = 0
+    start_new_thread(server , (0 , ))
     you.update()
     playe2.manup()
     pg.display.update()

@@ -37,11 +37,14 @@ def client(c):
     c.close()
 
 while True:
+    try:
+        c , addr = server.accept()
 
-    c , addr = server.accept()
-
-    start_new_thread(client, (c , ))
-    Thrid += 1
+        start_new_thread(client, (c , ))
+        Thrid += 1
+        print(data)
+    except KeyboardInterrupt:
+        quit()
 
 
 
