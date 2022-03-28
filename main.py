@@ -32,7 +32,8 @@ class Player():
                 self.pulrect.x += self.pulspeed
                 self.display.blit(self.pul, self.pulrect)
         self.display.blit(self.image, self.rect)
-
+    def manup(self):
+        self.display.blit(self.image, self.rect)
     def fire(self):
         if self.fir == False:
             self.pul = pg.transform.scale((pg.image.load('pupilka.png')), (20, 20))
@@ -45,10 +46,11 @@ class Player():
 def connec(type):
     global data , me , you , playe2
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.settimeout(300)
     #Get headers
     if type == 'GET':
         dat = {'headers' : 'GET' , 'room' : 1 , 'game' : {}}
-        sock.connect(('127.0.0.1', 2222))
+        sock.connect(('192.168.1.188', 2222))
         sock.send(json.dumps(dat).encode('utf-8'))
         try:
             if me == 'player1':
@@ -66,15 +68,16 @@ def connec(type):
     #Post headers
     if type == 'POST':
         dat = {'headers': 'POST' , 'room' : 1 , 'game' : data}
-        sock.connect(('127.0.0.1' , 2222))
+        sock.connect(('192.168.1.188' , 2222))
         sock.send(json.dumps(dat).encode('utf-8'))
 
     #Room connect headers
     if type == 'CONN':
         dat = {'headers' : 'CONN' , 'room' : 1 , 'game' : {}}
-        sock.connect(('127.0.0.1' , 2222))
+        sock.connect(('192.168.1.188' , 2222))
         sock.send(json.dumps(dat).encode('utf-8'))
         da = json.loads(sock.recv(1048576).decode('utf-8'))
+        print(da['status'])
         if da['status'] == 'admin':
             me = 'player1'
             you = Player(['1.png', 150, 150, 5, 5, windows, 0])
@@ -83,9 +86,7 @@ def connec(type):
             me = 'player2'
             you = Player(['1.png', 150, 150, 5, 5, windows, 840])
             playe2 = Player(['1.png', 150, 150, 5, 5, windows, 0])
-        else:
-            quit()
-    sock.close()
+
 #Parsing function
 def parse():
     global data , me , you
@@ -107,9 +108,9 @@ def parse():
 
 try:
     connec('CONN')
-except:
-    print('CONNECT ERR')
-    quit()
+except Exception as e:
+    print(str(e))
+
 tick = 0
 game = True
 bg = pg.transform.scale(pg.image.load('3.jpg'), (1000, 700))
@@ -122,12 +123,13 @@ while game == True:
         if e.type == pg.QUIT:
             game = False
     pg.display.set_caption(str(clock.get_fps()))
-    if tick == 20:
+    if tick == 5:
         connec("GET")
         parse()
         connec("POST")
         tick = 0
     you.update()
+    playe2.manup()
     pg.display.update()
     clock.tick(60)
     tick += 1
