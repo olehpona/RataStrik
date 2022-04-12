@@ -4,7 +4,7 @@ from _thread import *
 data = {}
 #data structure {room : {'player1' : {} , 'player2' : {}} , ...}
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server.bind(('192.168.1.188', 2222))
+server.bind(('127.0.0.1', 2222))
 server.listen(15)
 Thrid = 0
 def parser(recv):
@@ -16,24 +16,31 @@ def parser(recv):
         packeg = data[room]
         return packeg
     elif reqv == 'POST':
-        data[room] = game
+        data[room][game['me']] = game['data']
         return 1
     elif reqv == 'CONN':
         if room in data.keys():
             if 'player2' in data[room]:
-                packeg = {'status': 'full'}
+                if 'player1' in data[room]:
+                    packeg = {'status': 'full'}
+                else:
+                    packeg = {'status': 'admin'}
             else:
                 packeg = {'status' : 'connected'}
         else:
             data[room] = {}
             packeg = {'status' : 'admin'}
+        print(packeg)
         return packeg
+    elif reqv == 'DISCONN':
+        print(game['me'])
+        data[room].pop(game['me'])
+        return 1
 def client(c):
     resived = json.loads(c.recv(1048576).decode('utf-8'))
     retur = parser(resived)
     if (retur != 1):
         c.sendall(json.dumps(retur).encode('utf-8'))
-    print(addr)
     c.close()
 
 while True:
@@ -43,8 +50,8 @@ while True:
         start_new_thread(client, (c , ))
         Thrid += 1
         print(data)
-    except KeyboardInterrupt:
-        quit()
+    except Exception as ex:
+        print(str(ex))
 
 
 
