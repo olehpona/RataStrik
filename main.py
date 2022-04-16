@@ -183,8 +183,8 @@ def connec(type):
         da = json.loads(sock.recv(1048576).decode('utf-8'))
         if da['status'] == 'admin':
             me = 'player1'
-            you = Player(['1.png', 150, 150, 5, 5, windows, 0 , me])
-            playe2 = Player(['1.png', 150, 150, 5, 5, windows, 840 , me])
+            you = Player(['resourse/textures/1.png', 150, 150, 5, 5, windows, 0 , me])
+            playe2 = Player(['resourse/textures/1.png', 150, 150, 5, 5, windows, 840 , me])
         elif da['status'] == 'connected':
             me = 'player2'
             you = Player(['1.png', 150, 150, 5, 5, windows, 840,me])
