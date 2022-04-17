@@ -6,18 +6,20 @@ pg.init()
 pg.mixer.init()
 pg.mixer.music.load('resourse/audio/music/1.mp3')
 pg.mixer.music.play(0)
+fonts = pg.font.Font('freesansbold.ttf', 30)
 gamemode = 0
+settmode = 0
 windows = pg.display.set_mode((1000, 700), pg.DOUBLEBUF)
 bg = pg.transform.scale(pg.image.load('resourse/textures/menu.jpg'), (1000, 700))
 class Button():
-    def __init__(self , text , pos , func , disp):
+    def __init__(self , text , pos , func ,size , disp):
         self.text = text
         self.pos = pos
         self.func = func
         fond = pg.font.Font('freesansbold.ttf', 15)
         self.font = fond.render(text, True, (0 , 0 , 0))
         self.fontrect = self.font.get_rect()
-        self.image = pg.transform.scale(pg.image.load('resourse/textures/button.png'), (200 , 200))
+        self.image = pg.transform.scale(pg.image.load('resourse/textures/button.png'), (size[0] , size[1]))
         self.rect = self.image.get_rect()
         self.disp = disp
         x , y = pos
@@ -35,15 +37,46 @@ class Button():
     def render(self):
         self.disp.blit(self.image , self.rect)
         self.disp.blit(self.font, self.fontrect)
+
 def play():
     global gamemode
     gamemode = 1
 def quitf():
     quit()
-play = Button('PLAY' ,  (50 , 50) , play , windows)
-quuit = Button('QUIT' ,  (50 , 400) , quitf , windows)
-
-
+def sett():
+    global settmode
+    settmode = 1
+play = Button('PLAY' ,  (50 , 10) , play ,[200 , 200], windows)
+quuit = Button('QUIT' ,  (50 , 400) , quitf ,[200 , 200], windows)
+settin = Button('Setting' , (50 , 200) , sett , [200 , 200] , windows)
+class Setting():
+    def __init__(self , width = 300 , height = 500  , font = None):
+        self.size = (width , height)
+        self.surface = pg.Surface(self.size)
+        self.surface.fill((0 , 150 , 0))
+        self.valume = '100'
+        self.volumetext = font.render(self.valume , True , (0 , 0 ,0))
+        self.volumerect = self.volumetext.get_rect()
+        self.volumerect.x = 200
+        self.volumerect.y = 150
+        self.minus = Button("-" , (25 , 50) , self.minu , [100 , 100] , self.surface)
+        self.plus = Button("+", (25, 150), self.plu, [100, 100], self.surface)
+    def minu(self):
+        if self.valume > 0:
+            self.valume -= 5
+    def plu(self):
+        if self.valume < 100:
+            self.valume += 5
+    def update(self , e , mixer):
+        #ВОТ ТУТ НЕ РОБИТЬ
+        mixer.music.set_volume(float(self.valume)/100)
+        self.minus.render()
+        self.plus.render()
+        self.surface.blit(self.volumetext , self.volumerect)
+        self.plus.update(e)
+        self.minus.update(e)
+        self.volumetext = font.render(self.valume, True, (0, 0, 0))
+setting = Setting(font = fonts)
 
 
 
@@ -226,10 +259,17 @@ while game == True:
     if gamemode == 0:
         play.render()
         quuit.render()
+        settin.render()
         ev = pg.event.get()
+        if settmode == 1:
+            windows.blit(setting.surface , (350 , 80))
+            if pg.key.get_pressed()[pg.K_ESCAPE]:
+                settmode == 0
         for e in ev:
             play.update(e)
             quuit.update(e)
+            settin.update(e)
+            setting.update(e , pg.mixer)
             if e.type == pg.QUIT:
                 game = False
     if gamemode == 1:
