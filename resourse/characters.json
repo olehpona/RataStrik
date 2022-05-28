@@ -1,0 +1,5 @@
+{
+  "1.png" : {"speed": 5 , "atk" : 5 , "hp" :  20 , "text" : "Op how is there! [Atk : 5 , Speed : 5 , HP : 20]"},
+  "2.png" : {"speed" : 8, "atk" : 2 , "hp" : 15 , "text" :  "So fast Remy [Atk : 2 , Speed : 8 , HP : 15]"},
+  "3.png" : {"speed":  2, "atk" : 8 , "hp" :  25, "text" : "Tank -- Emile! [Atk : 8 , Speed : 2 , HP : 25] "}
+}
